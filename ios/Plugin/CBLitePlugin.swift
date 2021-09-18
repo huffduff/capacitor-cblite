@@ -12,14 +12,14 @@ public class CBLitePlugin: CAPPlugin {
     /**
      * dbs holds a dictionary of active database handles
      */
-    private var dbs = Dictionary<String, CBLite>.init(minimumCapacity: 1)
+    private var dbs = Dictionary<String, Database>.init(minimumCapacity: 1)
     
-    private func _db(_ call: CAPPluginCall) throws -> CBLite {
+    private func _db(_ call: CAPPluginCall) throws -> Database {
         let name = call.getString("name", "")
         print("Looking for database named: \(name)")
         if (dbs[name] == nil) {
             print("Creating database with \(name)")
-            dbs[name] = try CBLite(name)
+            dbs[name] = try Database(name)
 //            print("registering change events: \(name)")
             _ = dbs[name]!.watchChanges(self)
         }

@@ -2,31 +2,31 @@ import Foundation
 import Capacitor
 import CouchbaseLiteSwift
 
-@objc public class CBLite: NSObject {
-    internal let database: Database
+@objc public class Database: NSObject {
+    internal let database: CouchbaseLiteSwift.Database
     
-    internal var replicator: CBLiteReplicator?
+    internal var replicator: Replicator?
     
     private var changeToks: [ListenerToken] = []
     
     init(_ name: String) throws {
         let tempFolder = NSTemporaryDirectory().appending("cbllog")
-        Database.log.file.config = LogFileConfiguration(directory: tempFolder)
+        CouchbaseLiteSwift.Database.log.file.config = LogFileConfiguration(directory: tempFolder)
         // TODO make this configurable
-        Database.log.file.level = .info
+        CouchbaseLiteSwift.Database.log.file.level = .info
 
         print("initializing database \(name)")
-        self.database = try Database.init(name: name)
+        self.database = try CouchbaseLiteSwift.Database.init(name: name)
     }
     
-    internal func setRemote(_ host: String) -> CBLiteReplicator {
+    internal func setRemote(_ host: String) -> Replicator {
         if replicator == nil {
-            replicator = CBLiteReplicator(self, url: host)
+            replicator = Replicator(self, url: host)
         }
         return replicator!
     }
     
-    internal func watchChanges(_ cap: CAPPlugin) -> CBLite {
+    internal func watchChanges(_ cap: CAPPlugin) -> Database {
         let label = "cblite:\(database.name):change"
         let tok = database.addChangeListener { (change) in
             for id in change.documentIDs {

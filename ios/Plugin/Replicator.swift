@@ -9,16 +9,16 @@
 import Foundation
 import CouchbaseLiteSwift
 
-@objc internal class CBLiteReplicator: NSObject {
-    private let db: CBLite
+@objc internal class Replicator: NSObject {
+    private let db: Database
     
     private let endpoint: URLEndpoint
         
-    private var replicator: Replicator?
+    private var replicator: CouchbaseLiteSwift.Replicator?
     
     private var changeToks: [ListenerToken] = []
         
-    init(_ db: CBLite, url: String) {
+    init(_ db: Database, url: String) {
         self.db = db
         var parsed = URL(string: url)!
         if parsed.scheme != "wss" && parsed.scheme != "ws" {
@@ -27,7 +27,7 @@ import CouchbaseLiteSwift
         self.endpoint = URLEndpoint(url: parsed)
     }
     
-    internal func setSession(sessionID: String) -> CBLiteReplicator {
+    internal func setSession(sessionID: String) -> Replicator {
         if (replicator != nil) {
             replicator?.stop()
         }
@@ -38,7 +38,7 @@ import CouchbaseLiteSwift
         // FIXME this should be controlled by the user
         config.continuous = true
         
-        replicator = Replicator(config: config)
+        replicator = CouchbaseLiteSwift.Replicator(config: config)
         
         // set the basic watch automatically
         return self // .watchChanges(cap)
