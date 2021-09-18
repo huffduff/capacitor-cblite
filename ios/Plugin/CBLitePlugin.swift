@@ -21,7 +21,9 @@ public class CBLitePlugin: CAPPlugin {
             print("Creating database with \(name)")
             dbs[name] = try Database(name)
 //            print("registering change events: \(name)")
-            _ = dbs[name]!.watchChanges(self)
+            dbs[name]!.watchChanges { (event: String, data: [String: Any]) -> () in
+                self.notifyListeners(event, data: data)
+            }
         }
         return dbs[name]!
     }

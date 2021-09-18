@@ -26,20 +26,35 @@ import CouchbaseLiteSwift
         return replicator!
     }
     
-    internal func watchChanges(_ cap: CAPPlugin) -> Database {
+//    internal func watchChanges(_ cap: CAPPlugin) -> Database {
+//        let label = "cblite:\(database.name):change"
+//        let tok = database.addChangeListener { (change) in
+//            for id in change.documentIDs {
+//                do {
+//                    let doc = try self.get(id)
+//                    cap.notifyListeners(label, data: doc)
+//                } catch {
+//                    // ignore missing documents?
+//                }
+//            }
+//        }
+//        changeToks.append(tok)
+//        return self
+//    }
+    internal func watchChanges(_ call: @escaping (String, [String: Any])->()) {
         let label = "cblite:\(database.name):change"
         let tok = database.addChangeListener { (change) in
             for id in change.documentIDs {
                 do {
                     let doc = try self.get(id)
-                    cap.notifyListeners(label, data: doc)
+                    call(label, doc)
                 } catch {
                     // ignore missing documents?
                 }
             }
         }
         changeToks.append(tok)
-        return self
+
     }
     
     // stopped, offline, connecting, idle, busy (completed and total should be ignored?)
