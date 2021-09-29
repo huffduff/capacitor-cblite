@@ -26,21 +26,6 @@ import CouchbaseLiteSwift
         return replicator!
     }
     
-//    internal func watchChanges(_ cap: CAPPlugin) -> Database {
-//        let label = "cblite:\(database.name):change"
-//        let tok = database.addChangeListener { (change) in
-//            for id in change.documentIDs {
-//                do {
-//                    let doc = try self.get(id)
-//                    cap.notifyListeners(label, data: doc)
-//                } catch {
-//                    // ignore missing documents?
-//                }
-//            }
-//        }
-//        changeToks.append(tok)
-//        return self
-//    }
     internal func watchChanges(_ call: @escaping (String, [String: Any])->()) {
         let label = "cblite:\(database.name):change"
         let tok = database.addChangeListener { (change) in
@@ -77,7 +62,7 @@ import CouchbaseLiteSwift
         return doc
     }
     
-    internal func put(_ _id: String, _rev: String?, data: JSObject) throws -> MutableDocument {
+    internal func put(_ _id: String, _rev: String?, data: JSObject) throws -> [String: String] {
         var doc = database.document(withID: _id)?.toMutable()
         if (doc == nil) {
             if _rev != nil {
@@ -90,7 +75,7 @@ import CouchbaseLiteSwift
         }
         doc!.setData(data)
         try database.saveDocument(doc!)
-        return doc!
+        return ["_id": doc!.id, "_rev": doc!.revisionID!]
     }
     
     internal func remove(_ _id: String, _rev: String) throws {

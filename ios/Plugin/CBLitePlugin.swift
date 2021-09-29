@@ -79,7 +79,7 @@ public class CBLitePlugin: CAPPlugin {
                     self.notifyListeners(event, data: data)
                 }
                 
-            // TODO return useful ino?
+            // TODO return useful info?
             call.resolve()
         } catch {
             call.reject("Problem starting replication", nil, error)
@@ -133,10 +133,10 @@ public class CBLitePlugin: CAPPlugin {
                 call.reject("_id field required")
                 return
             }
-            let _rev = data.removeValue(forKey: "_rev") as! String
+            let _rev = data.removeValue(forKey: "_rev") as! String?
             
             let doc = try db.put(_id, _rev: _rev, data: data)
-            call.resolve(["_id": doc.id, "_rev": doc.revisionID!])
+            call.resolve(doc)
         } catch {
             call.reject("Problem saving document", nil, error)
         }
@@ -167,7 +167,7 @@ public class CBLitePlugin: CAPPlugin {
             for i in db.indexes() {
                 out.append(i)
             }
-            call.resolve(["indexes": out ])
+            call.resolve([ "indexes": out ])
         } catch {
             call.reject("Problems getting indexes");
         }
@@ -202,9 +202,11 @@ public class CBLitePlugin: CAPPlugin {
                 call.reject("Problem registering script: values missing.")
                 return
             }
+            
+            let scriptPath = bridge?.portablePath(fromLocalURL: URL(string: script))
         
             try javascript.registerScript(label, script)
-            call.resolve()
+            call.resolve(["url": scriptPath?.absoluteString ?? ""])
         } catch {
             call.reject("Problem registering script", nil, error)
         }

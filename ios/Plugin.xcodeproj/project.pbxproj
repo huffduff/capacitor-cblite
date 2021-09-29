@@ -11,7 +11,7 @@
 		20C0B05DCFC8E3958A738AF2 /* Pods_PluginTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6753A823D3815DB436415E3 /* Pods_PluginTests.framework */; };
 		2F98D68224C9AAE500613A4C /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F98D68124C9AAE400613A4C /* Database.swift */; };
 		50ADFF92201F53D600D50D53 /* Plugin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50ADFF88201F53D600D50D53 /* Plugin.framework */; };
-		50ADFF97201F53D600D50D53 /* CBLitePluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50ADFF96201F53D600D50D53 /* CBLitePluginTests.swift */; };
+		50ADFF97201F53D600D50D53 /* DatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50ADFF96201F53D600D50D53 /* DatabaseTests.swift */; };
 		50ADFF99201F53D600D50D53 /* CBLitePlugin.h in Headers */ = {isa = PBXBuildFile; fileRef = 50ADFF8B201F53D600D50D53 /* CBLitePlugin.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		50ADFFA42020D75100D50D53 /* Capacitor.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50ADFFA52020D75100D50D53 /* Capacitor.framework */; };
 		50ADFFA82020EE4F00D50D53 /* CBLitePlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = 50ADFFA72020EE4F00D50D53 /* CBLitePlugin.m */; };
@@ -39,7 +39,7 @@
 		50ADFF8B201F53D600D50D53 /* CBLitePlugin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBLitePlugin.h; sourceTree = "<group>"; };
 		50ADFF8C201F53D600D50D53 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50ADFF91201F53D600D50D53 /* PluginTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PluginTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		50ADFF96201F53D600D50D53 /* CBLitePluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBLitePluginTests.swift; sourceTree = "<group>"; };
+		50ADFF96201F53D600D50D53 /* DatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseTests.swift; sourceTree = "<group>"; };
 		50ADFF98201F53D600D50D53 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50ADFFA52020D75100D50D53 /* Capacitor.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Capacitor.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		50ADFFA72020EE4F00D50D53 /* CBLitePlugin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CBLitePlugin.m; sourceTree = "<group>"; };
@@ -115,7 +115,7 @@
 		50ADFF95201F53D600D50D53 /* PluginTests */ = {
 			isa = PBXGroup;
 			children = (
-				50ADFF96201F53D600D50D53 /* CBLitePluginTests.swift */,
+				50ADFF96201F53D600D50D53 /* DatabaseTests.swift */,
 				50ADFF98201F53D600D50D53 /* Info.plist */,
 			);
 			path = PluginTests;
@@ -336,7 +336,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				50ADFF97201F53D600D50D53 /* CBLitePluginTests.swift in Sources */,
+				50ADFF97201F53D600D50D53 /* DatabaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
