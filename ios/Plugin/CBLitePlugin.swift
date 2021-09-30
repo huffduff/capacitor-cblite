@@ -12,22 +12,22 @@ public class CBLitePlugin: CAPPlugin {
     /**
      * dbs holds a dictionary of active database handles
      */
-    private var dbs = Dictionary<String, Database>.init(minimumCapacity: 1)
-    
+    private var dbs = [String: Database].init(minimumCapacity: 1)
+
     private func _db(_ call: CAPPluginCall) throws -> Database {
         let name = call.getString("name", "")
         print("Looking for database named: \(name)")
-        if (dbs[name] == nil) {
+        if dbs[name] == nil {
             print("Creating database with \(name)")
             dbs[name] = try Database(name)
-//            print("registering change events: \(name)")
-            dbs[name]!.watchChanges { (event: String, data: [String: Any]) -> () in
-                self.notifyListeners(event, data: data)
+            //            print("registering change events: \(name)")
+            dbs[name]!.watchChanges { (data: [String: Any]) -> Void in
+                self.notifyListeners("cblite:change", data: data)
             }
         }
         return dbs[name]!
     }
-    
+
     @objc func open(_ call: CAPPluginCall) {
         do {
             _ = try _db(call)
@@ -37,33 +37,34 @@ public class CBLitePlugin: CAPPlugin {
             call.reject("Problem opening database '\(call.getString("name", ""))'", nil, error)
         }
     }
-    
+
     @objc func sync(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
-        
+
             guard let host = call.getString("host"), let sessionID = call.getString("sessionId") else {
                 call.reject("host and Session ID required")
                 return
             }
 
             // get high level replication events
-            db.setRemote(host).setSession(sessionID: sessionID)
-                .start { (event: String, data: [String: Any]) -> () in
-                    self.notifyListeners(event, data: data)
+            db.setRemote(host)
+                .setSession(sessionID: sessionID)
+                .start { (data: [String: Any]) -> Void in
+                    self.notifyListeners("cblite:repl", data: data)
                 }
-                
+
             // TODO return useful ino?
             call.resolve()
         } catch {
             call.reject("Problem starting replication", nil, error)
         }
     }
-    
+
     @objc func updateSessionID(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
-        
+
             guard let sessionID = call.getString("sessionId") else {
                 call.reject("Session ID required")
                 return
@@ -75,17 +76,17 @@ public class CBLitePlugin: CAPPlugin {
                 return
             }
             db.replicator!.setSession(sessionID: sessionID)
-                .start { (event: String, data: [String: Any]) -> () in
-                    self.notifyListeners(event, data: data)
+                .start { (data: [String: Any]) -> Void in
+                    self.notifyListeners("cblite:repl", data: data)
                 }
-                
+
             // TODO return useful info?
             call.resolve()
         } catch {
             call.reject("Problem starting replication", nil, error)
         }
     }
-    
+
     @objc func stopSync(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
@@ -95,7 +96,7 @@ public class CBLitePlugin: CAPPlugin {
             call.reject("Problem stopping replication", nil, error)
         }
     }
-    
+
     @objc func destroy(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
@@ -105,7 +106,7 @@ public class CBLitePlugin: CAPPlugin {
             call.reject("Problem deleting database", nil, error)
         }
     }
-    
+
     @objc func get(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
@@ -120,11 +121,11 @@ public class CBLitePlugin: CAPPlugin {
             call.reject("Error fetching document", nil, error)
         }
     }
-    
+
     @objc func put(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
-            
+
             guard var data = call.getObject("doc") else {
                 call.reject("Document data missing")
                 return
@@ -134,7 +135,7 @@ public class CBLitePlugin: CAPPlugin {
                 return
             }
             let _rev = data.removeValue(forKey: "_rev") as! String?
-            
+
             let doc = try db.put(_id, _rev: _rev, data: data)
             call.resolve(doc)
         } catch {
@@ -146,7 +147,7 @@ public class CBLitePlugin: CAPPlugin {
     @objc func remove(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
-        
+
             guard let _id = call.getString("_id"), let _rev = call.getString("_rev") else {
                 call.reject("both _id and _rev fields are required")
                 return
@@ -157,22 +158,22 @@ public class CBLitePlugin: CAPPlugin {
             call.reject("Problems removing record", nil, error)
         }
     }
-    
+
     @objc func indexes(_ call: CAPPluginCall) {
         // TODO support deep fields?
         do {
             let db = try _db(call)
             var out: [Any] = []
-            
+
             for i in db.indexes() {
                 out.append(i)
             }
             call.resolve([ "indexes": out ])
         } catch {
-            call.reject("Problems getting indexes");
+            call.reject("Problems getting indexes")
         }
     }
-    
+
     @objc func createIndex(_ call: CAPPluginCall) {
         // TODO support deep fields?
         do {
@@ -187,40 +188,40 @@ public class CBLitePlugin: CAPPlugin {
             }
             // if no name submitted, generate one from the fields requested
             let name = (index["name"] as? String) ?? "[\(fields.joined(separator: "|"))]"
-        
+
             let created = try db.createIndex(name, fields: fields)
             call.resolve(["result": created ? "created" : "exists", "name": name])
-            
+
         } catch {
             call.reject("Problem creating index", nil, error)
         }
     }
-    
+
     @objc func registerScript(_ call: CAPPluginCall) {
         do {
             guard let label = call.getString("label"), let script = call.getString("script") else {
                 call.reject("Problem registering script: values missing.")
                 return
             }
-            
+
             let scriptPath = bridge?.portablePath(fromLocalURL: URL(string: script))
-        
+
             try javascript.registerScript(label, script)
             call.resolve(["url": scriptPath?.absoluteString ?? ""])
         } catch {
             call.reject("Problem registering script", nil, error)
         }
     }
-    
+
     @objc func query(_ call: CAPPluginCall) {
         do {
             let db = try _db(call)
-            
+
             let callback = call.getString("callback")
 
             var rows: [Any]
             let start = CFAbsoluteTimeGetCurrent()
-            
+
             if let q = call.getString("query") {
                 rows = try db.query(q)
             } else if let q = call.getObject("query") {
@@ -229,21 +230,21 @@ public class CBLitePlugin: CAPPlugin {
                 call.reject("Query or NQL statements required")
                 return
             }
-            
+
             let totalCount = rows.count
-            
+
             if callback != nil {
                 rows = try javascript.queryCallback(callback!, rows)
             }
-            
+
             let finalCount = rows.count
             let executionTime = CFAbsoluteTimeGetCurrent() - start
-            
+
             call.resolve([
                 "rows": rows,
                 "executionTime": executionTime,
                 "totalCount": totalCount,
-                "finalCount": finalCount,
+                "finalCount": finalCount
             ])
         } catch {
             call.reject("Problem executing query", nil, error)

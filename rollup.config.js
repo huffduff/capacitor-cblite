@@ -7,6 +7,7 @@ export default {
       name: 'capacitorCBLite',
       globals: {
         '@capacitor/core': 'capacitorExports',
+        'pouchdb-browser': 'PouchDB',
       },
       sourcemap: true,
       inlineDynamicImports: true,
@@ -18,5 +19,8 @@ export default {
       inlineDynamicImports: true,
     },
   ],
-  external: ['@capacitor/core'],
+  external: [
+    '@capacitor/core',
+    'pouchdb-browser',
+  ],
 };

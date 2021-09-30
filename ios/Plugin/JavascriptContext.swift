@@ -28,35 +28,35 @@ internal class JavascriptContext: JSContext {
 
     override init() {
         super.init()
-        exceptionHandler = { context, exception in
+        exceptionHandler = { _, exception in
             print(exception!.toString() ?? "unknown exception")
         }
         name = "CBLite:JSContext"
     }
-    
+
     override init(virtualMachine: JSVirtualMachine!) {
         super.init(virtualMachine: virtualMachine)
     }
-    
-//    override init(jsGlobalContextRef: JSGlobalContextRef) {
-//        super.init(jsGlobalContextRef: jsGlobalContextRef)
-//    }
-    
+
+    //    override init(jsGlobalContextRef: JSGlobalContextRef) {
+    //        super.init(jsGlobalContextRef: jsGlobalContextRef)
+    //    }
+
     internal func registerScript(_ label: String, _ src: String) throws {
         let cb = evaluateScript("const \(label) = \(src);")
         if cb == nil {
             throw CBLiteError.callbackNotRegistered
         }
     }
-    
+
     internal func queryCallback(_ script: String, _ rows: [Any]) throws -> [Any] {
-        
+
         let callback = evaluateScript(String(format: callbackWrapper, script))
         if callback == nil || callback!.isUndefined {
             throw CBLiteError.callbackNotRegistered
         }
         let res = callback!.call(withArguments: [rows])
-        let parsed = res?.toDictionary() as! [String:Any]
+        let parsed = res?.toDictionary() as! [String: Any]
         if parsed["error"] != nil || parsed["rows"] == nil {
             throw CBLiteError.callbackError(parsed["error"]!)
         }
