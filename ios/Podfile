@@ -1,4 +1,5 @@
 platform :ios, '12.0'
+plugin 'cocoapods-binary'
 
 def capacitor_pods
   # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
@@ -9,8 +10,13 @@ end
 
 target 'Plugin' do
   capacitor_pods
+  # pod 'CouchbaseLite-Swift', '~> 2.8.4'
+  pod 'CouchbaseLiteSwift', :git => 'https://github.com/huffduff/couchbase-lite-ios.git', :tag => '2.8.5-json-1', :binary => true
+
 end
 
 target 'PluginTests' do
   capacitor_pods
+  # pod 'CouchbaseLite-Swift', '~> 2.8.4'
+  pod 'CouchbaseLiteSwift', :git => 'https://github.com/huffduff/couchbase-lite-ios.git', :tag => '2.8.5-json-1', :binary => true
 end

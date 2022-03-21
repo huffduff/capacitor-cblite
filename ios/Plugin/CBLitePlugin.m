@@ -5,6 +5,7 @@
 // each method the plugin supports using the CAP_PLUGIN_METHOD macro.
 CAP_PLUGIN(CBLitePlugin, "CBLite",
            CAP_PLUGIN_METHOD(open, CAPPluginReturnNone);
+           CAP_PLUGIN_METHOD(close, CAPPluginReturnNone);
            CAP_PLUGIN_METHOD(sync, CAPPluginReturnNone);
            CAP_PLUGIN_METHOD(updateSessionID, CAPPluginReturnNone);
            CAP_PLUGIN_METHOD(stopSync, CAPPluginReturnNone);

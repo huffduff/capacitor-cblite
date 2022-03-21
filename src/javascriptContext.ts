@@ -7,6 +7,10 @@ export default class JavascriptContext {
     this.scripts[label] = src;
   }
 
+  retrieveScript(label: string): Callback<any> {
+    return this.scripts[label];
+  }
+
   queryCallback<T>(script: string, rows: T[]): T[] {
     if (this.scripts[script]) {
       return this.scripts[script](rows);

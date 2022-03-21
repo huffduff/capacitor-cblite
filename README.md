@@ -14,6 +14,7 @@ npx cap sync
 <docgen-index>
 
 * [`open(...)`](#open)
+* [`close(...)`](#close)
 * [`sync(...)`](#sync)
 * [`updateSessionID(...)`](#updatesessionid)
 * [`stopSync(...)`](#stopsync)
@@ -38,6 +39,21 @@ npx cap sync
 
 ```typescript
 open(options: CallOptions) => any
+```
+
+| Param         | Type                                                |
+| ------------- | --------------------------------------------------- |
+| **`options`** | <code><a href="#calloptions">CallOptions</a></code> |
+
+**Returns:** <code>any</code>
+
+--------------------
+
+
+### close(...)
+
+```typescript
+close(options: CallOptions) => any
 ```
 
 | Param         | Type                                                |
@@ -187,12 +203,12 @@ createIndex(options: CallOptions & { index: IndexRequest; }) => any
 ### registerScript(...)
 
 ```typescript
-registerScript(options: { label: string; script: string; }) => any
+registerScript<T = unknown>(options: { label: string; script: string | Callback<T>; }) => any
 ```
 
-| Param         | Type                                            |
-| ------------- | ----------------------------------------------- |
-| **`options`** | <code>{ label: string; script: string; }</code> |
+| Param         | Type                                                                 |
+| ------------- | -------------------------------------------------------------------- |
+| **`options`** | <code>{ label: string; script: string \| Callback&lt;T&gt;; }</code> |
 
 **Returns:** <code>any</code>
 
@@ -217,7 +233,7 @@ query<T = unknown>(options: CallOptions & QueryOptions<T>) => any
 ### addListener(...)
 
 ```typescript
-addListener(event: 'cblite:repl', listener: (data: ReplEvent) => void) => void
+addListener(event: 'cblite:repl', listener: (data: ReplEvent) => void) => any
 ```
 
 | Param          | Type                                                               |
@@ -225,19 +241,23 @@ addListener(event: 'cblite:repl', listener: (data: ReplEvent) => void) => void
 | **`event`**    | <code>"cblite:repl"</code>                                         |
 | **`listener`** | <code>(data: <a href="#replevent">ReplEvent</a>) =&gt; void</code> |
 
+**Returns:** <code>any</code>
+
 --------------------
 
 
 ### addListener(...)
 
 ```typescript
-addListener(event: 'cblite:change', listener: (data: ChangeEvent) => void) => void
+addListener(event: 'cblite:change', listener: (data: ChangeEvent) => void) => any
 ```
 
 | Param          | Type                                                                   |
 | -------------- | ---------------------------------------------------------------------- |
 | **`event`**    | <code>"cblite:change"</code>                                           |
 | **`listener`** | <code>(data: <a href="#changeevent">ChangeEvent</a>) =&gt; void</code> |
+
+**Returns:** <code>any</code>
 
 --------------------
 

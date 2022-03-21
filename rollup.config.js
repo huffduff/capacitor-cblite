@@ -8,6 +8,8 @@ export default {
       globals: {
         '@capacitor/core': 'capacitorExports',
         'pouchdb-browser': 'PouchDB',
+        'pouchdb-find': 'PouchFind',
+        'nanoevents': 'nanoevents',
       },
       sourcemap: true,
       inlineDynamicImports: true,
@@ -22,5 +24,7 @@ export default {
   external: [
     '@capacitor/core',
     'pouchdb-browser',
+    'pouchdb-find',
+    'nanoevents',
   ],
 };

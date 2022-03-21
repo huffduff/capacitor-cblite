@@ -1,3 +1,5 @@
+import type { PluginListenerHandle } from '@capacitor/core';
+
 export interface DatabaseRecord {
   _id: string;
   _rev?: string;
@@ -59,12 +61,15 @@ export interface ReplicationOptions extends CallOptions {
 
 export type Callback<T> = (rows: T[]) => T[];
 
+export type Listener = PluginListenerHandle;
+
 export interface QueryOptions<T> {
   query: Query | string;
   callback?: string | Callback<T>;
 }
 export interface CBLitePlugin {
   open(options: CallOptions): Promise<void>;
+  close(options: CallOptions): Promise<void>;
   sync(options: ReplicationOptions): Promise<void>;
   updateSessionID(options: Omit<ReplicationOptions, 'host'>): Promise<void>;
   stopSync(options: CallOptions): Promise<void>;
@@ -80,11 +85,13 @@ export interface CBLitePlugin {
   createIndex(
     options: CallOptions & { index: IndexRequest },
   ): Promise<IndexResult>;
-  registerScript(options: { label: string; script: string }): Promise<void>;
+  registerScript<T = unknown>(
+    options: { label: string; script: string | Callback<T> },
+  ): Promise<void>;
   query<T = unknown>(
     options: CallOptions & QueryOptions<T>,
   ): Promise<QueryResult<T>>;
 
-  addListener(event: 'cblite:repl', listener: (data: ReplEvent) => void): void;
-  addListener(event: 'cblite:change', listener: (data: ChangeEvent) => void): void;
+  addListener(event: 'cblite:repl', listener: (data: ReplEvent) => void): Promise<Listener>;
+  addListener(event: 'cblite:change', listener: (data: ChangeEvent) => void): Promise<Listener>;
 }

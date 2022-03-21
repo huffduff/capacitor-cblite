@@ -1,8 +1,12 @@
 import PouchDB from 'pouchdb-browser';
+import PouchFind from 'pouchdb-find';
+
 // import type { ChangesMeta } from 'pouchdb-changes';
 
 import type { DatabaseRecord, Query } from './definitions';
 import Replicator from './replicator';
+
+PouchDB.plugin(PouchFind);
 
 // Database abstract the underlying implementation, in case we decide to change it later
 export default class Database {

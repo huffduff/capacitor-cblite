@@ -1,14 +1,40 @@
 import { createNanoEvents } from 'nanoevents';
 import type { Unsubscribe } from 'nanoevents';
-import * as Core from '..';
+
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+import type {
+  Callback,
+  CBLitePlugin,
+  ChangeEvent,
+  DatabaseRecord,
+  IndexResult,
+  QueryOptions,
+  QueryResult,
+  ReplEvent,
+  Listener,
+} from './definitions';
+
+export const CBLite = registerPlugin<CBLitePlugin>('CBLite', {
+  web: () => import('./web').then((m) => new m.CBLiteWeb()),
+});
 
 // FIXME rxjs Subject may be a better fit for events, escpecially if liveQuery is implemented
 
 // FIXME typescript methods shold use the exact same as the upstream types,
 // but with Typescript's Omit(T, name)
 
-export * from '../definitions';
-export class CBLite {
+export enum Event {
+  Change = 'change',
+  Busy = 'sync:busy',
+  Stopped = 'sync:stopped',
+  Idle = 'sync:idle',
+  Offline = 'sync:offline',
+  Unauthorized = 'sync:unauthorized',
+  Error = 'sync:error',
+}
+
+export class Client {
   public static prefix = 'cblite';
 
   public readonly username: string;
@@ -19,6 +45,8 @@ export class CBLite {
 
   private events = createNanoEvents();
 
+  private listeners: Record<string, Listener> = {};
+
   //   public static get isNative() {
   //     return Capacitor.isNative || false;
   //   }
@@ -28,24 +56,17 @@ export class CBLite {
     pct: 100,
   };
 
-  public static async registerScript(label: string, script: Core.Callback<any>): Promise<void> {
+  public static async registerScript(label: string, script: Callback<any>): Promise<void> {
     // FIXME serialize only if not web
-    return Core.CBLite.registerScript({ label, script: JSON.stringify(script) });
+    return CBLite.registerScript({
+      label,
+      script: Capacitor.isNativePlatform() ? script.toString() : script,
+    });
   }
 
   constructor(username: string) {
     this.username = username;
-    this.name = `${CBLite.prefix}-${username.replace(/\./g, '-').toLowerCase()}`;
-
-    // FIXME there are better ways.
-    // register for change events
-    // FIXME add change event support for web (pouchdb) version
-    // FIXME unregister event when database is cancelled?
-    Core.CBLite.addListener('cblite:change', ({ name, doc }: Core.ChangeEvent) => {
-      if (name === this.name) {
-        this.events.emit('change', doc);
-      }
-    });
+    this.name = `${Client.prefix}-${username.replace(/\./g, '-').toLowerCase()}`;
   }
 
   public get sessionId(): string {
@@ -55,20 +76,49 @@ export class CBLite {
 
   public async open(): Promise<void> {
     const { name } = this;
-    return Core.CBLite.open({ name });
+    // FIXME there are better ways.
+    // register for change events
+    // FIXME add change event support for web (pouchdb) version
+    // FIXME unregister event when database is cancelled?
+    this.listeners.change = await CBLite.addListener('cblite:change', (e: ChangeEvent) => {
+      console.log({ info: e });
+      if (e.name === this.name) {
+        console.log('CBLITE:change', e);
+        this.events.emit('change', e.doc);
+      }
+    });
+    return CBLite.open({ name });
   }
 
-  public on<T = unknown>(event: string, callback: (info: T) => void): Unsubscribe {
+  public async close(): Promise<void> {
+    const { name } = this;
+    await CBLite.close({ name });
+    await this.listeners.change.remove();
+    delete this.listeners.change;
+  }
+
+  public on<T = unknown>(event: Event, callback: (info: T) => void): Unsubscribe {
     return this.events.on(event, callback);
+  }
+
+  public unsubscribe(match: string | RegExp): void {
+    const keys = Object.keys(this.events.events);
+    keys.forEach((key) => {
+      if (key.search(match) !== -1) {
+        delete this.events.events[key];
+      }
+    });
   }
 
   // should return an event emitter
   public async sync(host: string): Promise<void> {
     const { name, sessionId } = this;
-    Core.CBLite.addListener('cblite:repl', (info: Core.ReplEvent) => {
+    this.listeners.repl = await CBLite.addListener('cblite:repl', (info: ReplEvent) => {
+      console.log({ info });
       if (info.name !== this.name) {
         return;
       }
+
       this.events.emit(`repl:${info.event}`, info);
       // handle some events directly
       console.log(`CBLITE:repl:${info.event}`);
@@ -91,56 +141,62 @@ export class CBLite {
       }
     });
 
-    return Core.CBLite.sync({ name, host, sessionId });
+    return CBLite.sync({ name, host, sessionId });
   }
 
   public async stopSync(): Promise<void> {
     const { name } = this;
-    return Core.CBLite.stopSync({ name });
+    try {
+      await CBLite.stopSync({ name });
+      await this.listeners.repl.remove();
+      delete this.listeners.repl;
+    } catch (err) {
+      console.log(`error stopping sync: ${err}`);
+    }
   }
 
   public async destroy(): Promise<void> {
     const { name } = this;
-    return Core.CBLite.destroy({ name });
+    return CBLite.destroy({ name });
   }
 
-  public async get<T = Core.DatabaseRecord>(_id: string, _rev?: string): Promise<T> {
+  public async get<T = DatabaseRecord>(_id: string, _rev?: string): Promise<T> {
     const { name } = this;
     // FIXME this used to work
     // return CouchbaseLite.get<T>({ name, _id, _rev });
-    return Core.CBLite.get({ name, _id, _rev });
+    return CBLite.get({ name, _id, _rev });
   }
 
-  public async put(doc: Core.DatabaseRecord): Promise<Core.DatabaseRecord> {
+  public async put<T = any>(doc: DatabaseRecord & T): Promise<DatabaseRecord> {
     const { name } = this;
-    return Core.CBLite.put({ name, doc });
+    return CBLite.put({ name, doc });
   }
 
   public async remove(_id: string, _rev: string): Promise<void> {
     const { name } = this;
-    return Core.CBLite.remove({ name, _id, _rev });
+    return CBLite.remove({ name, _id, _rev });
   }
 
   public async indexes(): Promise<string[]> {
     const { name } = this;
-    const { indexes } = await Core.CBLite.indexes({ name });
+    const { indexes } = await CBLite.indexes({ name });
     return indexes;
   }
 
   // TODO support naming it? or rely on autonaming feature?
-  public async createIndex(fields: string[]): Promise<Core.IndexResult> {
+  public async createIndex(fields: string[]): Promise<IndexResult> {
     const { name } = this;
-    return Core.CBLite.createIndex({ name, index: { fields } });
+    return CBLite.createIndex({ name, index: { fields } });
   }
 
-  public async query<T>({ query, callback }: Core.QueryOptions<T>): Promise<Core.QueryResult<T>> {
+  public async query<T>({ query, callback }: QueryOptions<T>): Promise<QueryResult<T>> {
     const { name } = this;
     const start = Date.now();
     // FIXME stringify if not web?
     // const prepped = JSON.stringify(query);
     // const callback = reducer ? JSON.stringify(reducer) : undefined;
     // const res = (await Core.CBLite.query({ name, query: prepped, callback })) as QueryResult<T>;
-    const res = (await Core.CBLite.query({ name, query, callback })) as Core.QueryResult<T>;
+    const res = (await CBLite.query({ name, query, callback })) as QueryResult<T>;
     res.totalTime = (Date.now() - start) / 1000;
     return res;
   }

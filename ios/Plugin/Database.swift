@@ -10,13 +10,14 @@ import CouchbaseLiteSwift
     private var changeToks: [ListenerToken] = []
 
     init(_ name: String) throws {
-        let tempFolder = NSTemporaryDirectory().appending("cbllog")
-        CouchbaseLiteSwift.Database.log.file.config = LogFileConfiguration(directory: tempFolder)
-        // TODO make this configurable
-        CouchbaseLiteSwift.Database.log.file.level = .info
+         let tempFolder = NSTemporaryDirectory().appending("cbllog")
+         CouchbaseLiteSwift.Database.log.file.config = LogFileConfiguration(directory: tempFolder)
+         // TODO make this configurable
+         CouchbaseLiteSwift.Database.log.file.level = .info
 
-        print("initializing database \(name)")
+        print("initializing database \(name): \(CouchbaseLiteSwiftVersionNumber)")
         self.database = try CouchbaseLiteSwift.Database.init(name: name)
+        
     }
 
     internal func setRemote(_ host: String) -> Replicator {
@@ -28,17 +29,18 @@ import CouchbaseLiteSwift
 
     internal func watchChanges(_ call: @escaping ([String: Any]) -> Void) {
         let tok = database.addChangeListener { (change) in
+            print("change event triggered", change.documentIDs)
             for id in change.documentIDs {
                 do {
                     let doc = try self.get(id)
                     call(["name": self.database.name, "doc": doc])
                 } catch {
+                    print("couldn't fetch doc '\(id)' for change event")
                     // ignore missing documents?
                 }
             }
         }
         changeToks.append(tok)
-
     }
 
     // stopped, offline, connecting, idle, busy (completed and total should be ignored?)
@@ -121,25 +123,13 @@ import CouchbaseLiteSwift
 
     private func query(_ q: Query) throws -> [Any] {
         // TODO tighten up type? [Dictionary<String, Any>], or even more specific?
+//        print(try q.explain())
+        
         var rows: [Any] = []
         for result in try q.execute() {
-            if result.contains(key: "doc") {
-                // flattens structure built by find()
-                var doc = result.dictionary(forKey: "doc")!.toDictionary()
-                if let _id = result.string(forKey: "_id") {
-                    doc["_id"] = _id
-                }
-                rows.append(doc)
-            } else {
-                rows.append(result.toDictionary())
-            }
+            rows.append(result.toDictionary())
         }
         return rows
-    }
-
-    internal func query(_ src: String) throws -> [Any] {
-        let q = QueryBuilder.fromNQL(database: database, expressions: src)
-        return try query(q)
     }
 
     internal func query(_ src: JSObject) throws -> [Any] {

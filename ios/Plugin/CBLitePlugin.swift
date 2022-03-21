@@ -9,24 +9,55 @@ let javascript = JavascriptContext()
  */
 @objc(CBLitePlugin)
 public class CBLitePlugin: CAPPlugin {
+    
+    override public func load() {
+        do {
+            // TODO rebuild to support a key to reduce by?
+            try javascript.registerScript("mergeKeys", """
+function mergeKeys(rows) {
+  const key = '_key';
+  const out = rows.reduce((acc, row) => {
+    const was = acc[row[key]] || {};
+    acc[row[key]] = { ...was, ...row };
+    return acc;
+  }, {});
+  return Object.values(out);
+}
+"""
+)
+        } catch {
+            print("ERROR: problems registering javascript callbacks")
+        }
+    }
+    
     /**
      * dbs holds a dictionary of active database handles
      */
     private var dbs = [String: Database].init(minimumCapacity: 1)
 
-    private func _db(_ call: CAPPluginCall) throws -> Database {
+    private func _db(_ call: CAPPluginCall, unregister: Bool = false) throws -> Database {
         let name = call.getString("name", "")
-        print("Looking for database named: \(name)")
+        // print("Looking for database named: \(name)")
         if dbs[name] == nil {
-            print("Creating database with \(name)")
+            print("Creating database \(name)")
             dbs[name] = try Database(name)
-            //            print("registering change events: \(name)")
+            print("registering change events: \(name)")
             dbs[name]!.watchChanges { (data: [String: Any]) -> Void in
+                print("sending change event: \(data["doc"] ?? "missing")")
                 self.notifyListeners("cblite:change", data: data)
             }
         }
-        return dbs[name]!
+        
+        return (unregister ? dbs.removeValue(forKey: name) : dbs[name])!
     }
+    
+//    private func _db(_ call: CAPPluginCall, unregister: Bool = false) throws -> Database {
+//        let db = try _db(call)
+//        if unregister {
+//
+//        }
+//        return db
+//    }
 
     @objc func open(_ call: CAPPluginCall) {
         do {
@@ -35,6 +66,16 @@ public class CBLitePlugin: CAPPlugin {
             call.resolve()
         } catch {
             call.reject("Problem opening database '\(call.getString("name", ""))'", nil, error)
+        }
+    }
+    
+    @objc func close(_ call: CAPPluginCall) {
+        do {
+            _ = try _db(call, unregister: true)
+            // TODO return useful info?
+            call.resolve()
+        } catch {
+            call.reject("Problem closing database '\(call.getString("name", ""))'", nil, error)
         }
     }
 
@@ -48,11 +89,12 @@ public class CBLitePlugin: CAPPlugin {
             }
 
             // get high level replication events
-            db.setRemote(host)
-                .setSession(sessionID: sessionID)
-                .start { (data: [String: Any]) -> Void in
-                    self.notifyListeners("cblite:repl", data: data)
-                }
+            let repl = db.setRemote(host)
+            repl.listener = {(data: [String: Any]) -> Void in
+                print("repl change", data)
+                self.notifyListeners("cblite:repl", data: data)
+            }
+            repl.startSession(sessionID, initial: true)
 
             // TODO return useful ino?
             call.resolve()
@@ -75,10 +117,7 @@ public class CBLitePlugin: CAPPlugin {
                 call.reject("Replicator not available")
                 return
             }
-            db.replicator!.setSession(sessionID: sessionID)
-                .start { (data: [String: Any]) -> Void in
-                    self.notifyListeners("cblite:repl", data: data)
-                }
+            db.replicator!.startSession(sessionID)
 
             // TODO return useful info?
             call.resolve()
@@ -99,7 +138,7 @@ public class CBLitePlugin: CAPPlugin {
 
     @objc func destroy(_ call: CAPPluginCall) {
         do {
-            let db = try _db(call)
+            let db = try _db(call, unregister: true)
             try db.delete()
             call.resolve()
         } catch {
@@ -218,16 +257,14 @@ public class CBLitePlugin: CAPPlugin {
             let db = try _db(call)
 
             let callback = call.getString("callback")
-
+            
             var rows: [Any]
             let start = CFAbsoluteTimeGetCurrent()
 
-            if let q = call.getString("query") {
-                rows = try db.query(q)
-            } else if let q = call.getObject("query") {
+            if let q = call.getObject("query") {
                 rows = try db.query(q)
             } else {
-                call.reject("Query or NQL statements required")
+                call.reject("Query statement required")
                 return
             }
 

@@ -1,6 +1,6 @@
 module.exports = {
   extends: [
-    '@ionic/eslint-config/recommended',
+    // '@ionic/eslint-config/recommended',
     'airbnb-base',
     'airbnb-typescript/base',
   ],

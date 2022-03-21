@@ -21,17 +21,25 @@ const js = new JavascriptContext();
 export class CBLiteWeb extends WebPlugin implements CBLitePlugin {
   protected dbs: Record<string, Database> = {};
 
-  protected _db(name: string): Database {
+  protected _db(name: string, unregister = false): Database {
     if (!this.dbs[name]) {
       const local = new Database(name);
       local.watchChanges(this.notifyListeners);
       this.dbs[name] = local;
     }
-    return this.dbs[name];
+    const db = this.dbs[name];
+    if (unregister) {
+      delete this.dbs[name];
+    }
+    return db;
   }
 
   async open({ name }: CallOptions): Promise<void> {
     this._db(name);
+  }
+
+  async close({ name }: CallOptions): Promise<void> {
+    this._db(name, true);
   }
 
   async sync({ name, host, sessionId }: ReplicationOptions): Promise<void> {
@@ -40,6 +48,7 @@ export class CBLiteWeb extends WebPlugin implements CBLitePlugin {
     }
 
     const db = this._db(name);
+    console.log({ this: this, notify: this.notifyListeners });
     db.setRemote(host).setSession(sessionId).start(this.notifyListeners);
   }
 
@@ -148,12 +157,11 @@ export class CBLiteWeb extends WebPlugin implements CBLitePlugin {
     if (!query) {
       return Promise.reject(new Error('Query required'));
     }
-    const cb = callback && typeof callback !== 'string'
-      ? callback?.toString()
-      : callback;
-    if (cb) {
-      throw this.unimplemented('Callback support not implemented on web... yet.');
+    let cb = callback;
+    if (typeof callback === 'string') {
+      cb = js.retrieveScript(callback);
     }
+    console.log({ cb });
     throw this.unimplemented('Not implemented on web... yet.');
   }
 }
