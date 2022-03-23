@@ -2,6 +2,13 @@ import Foundation
 import Capacitor
 import CouchbaseLiteSwift
 
+func initDatabase() {
+    let tempFolder = NSTemporaryDirectory().appending("cbllog")
+    CouchbaseLiteSwift.Database.log.file.config = LogFileConfiguration(directory: tempFolder)
+    // TODO make this configurable
+    CouchbaseLiteSwift.Database.log.file.level = .info
+}
+
 @objc public class Database: NSObject {
     internal let database: CouchbaseLiteSwift.Database
 
@@ -10,11 +17,6 @@ import CouchbaseLiteSwift
     private var changeToks: [ListenerToken] = []
 
     init(_ name: String) throws {
-         let tempFolder = NSTemporaryDirectory().appending("cbllog")
-         CouchbaseLiteSwift.Database.log.file.config = LogFileConfiguration(directory: tempFolder)
-         // TODO make this configurable
-         CouchbaseLiteSwift.Database.log.file.level = .info
-
         print("initializing database \(name): \(CouchbaseLiteSwiftVersionNumber)")
         self.database = try CouchbaseLiteSwift.Database.init(name: name)
         

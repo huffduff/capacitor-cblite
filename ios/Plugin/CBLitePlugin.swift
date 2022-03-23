@@ -11,6 +11,7 @@ let javascript = JavascriptContext()
 public class CBLitePlugin: CAPPlugin {
     
     override public func load() {
+        initDatabase()
         do {
             // TODO rebuild to support a key to reduce by?
             try javascript.registerScript("mergeKeys", """
